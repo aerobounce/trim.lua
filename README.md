@@ -5,8 +5,19 @@ Utilizes ffprobe to fetch accurate keyframes.
 
 # Install
 ```
-cp trim.lua ~/.config/mpv/scripts
+curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
+
+
+# How to use
+`h`: Saves trim start position\
+`k`: Saves trim end position
+- On second press with the same position invokes write out of a clip.
+
+`shift+h`: Seek to trim start position\
+`shift+k`: Seek to trim end position\
+`Shift+LEFT`: Seek forwards relatively by minimum keyframes\
+`Shift+RIGHT`: Seek backwards relatively by minimum keyframes
 
 
 # Todo
