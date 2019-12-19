@@ -1,6 +1,7 @@
 # trim.lua
 mpv script to create a trim of video files without transcoding.\
-Utilizes ffprobe to fetch accurate keyframes.
+Utilizes ffprobe to fetch accurate keyframes.\
+**Make sure you have `ffmpeg` installed.**
 
 
 # Install
@@ -22,6 +23,7 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 
 # Todo
 - [ ] More accurate keyframe fetching.
+- [ ] ffmpeg and ffprobe paths are hard-coded.
 
 
 # Differences from other similar scripts
