@@ -31,5 +31,7 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 
 
 ## Todo
-- [ ] More accurate keyframe fetching.
-- [ ] ffmpeg and ffprobe paths are hard-coded.
+- [ ] More descriptive usage section
+- [ ] Keybinding to quit trim-mode
+- [ ] More accurate keyframe fetching
+- [ ] ffmpeg and ffprobe paths are hard-coded
