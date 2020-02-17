@@ -18,8 +18,8 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 
 
 ## Usage
-<kbd>h</kbd> — Save Trim Start Position<br>
-<kbd>k</kbd> — Save Trim End Position<br>
+<kbd>h</kbd> — Save Trim Start Position (Enters trim-mode on the first press)<br>
+<kbd>k</kbd> — Save Trim End Position (Enters trim-mode on the first press)<br>
 <br>
 <kbd>shift</kbd>+<kbd>h</kbd> — Seek to Trim Start Position<br>
 <kbd>shift</kbd>+<kbd>k</kbd> — Seek to Trim End Position<br>
