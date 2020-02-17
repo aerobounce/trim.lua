@@ -24,8 +24,8 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 <kbd>shift</kbd>+<kbd>h</kbd> — Seek to Trim Start Position<br>
 <kbd>shift</kbd>+<kbd>k</kbd> — Seek to Trim End Position<br>
 <br>
-<kbd>shift</kbd>+<kbd>LEFT</kbd> — Seek Forwards Relatively by Minimum Keyframes<br>
-<kbd>shift</kbd>+<kbd>RIGHT</kbd> — Seek Backwards Relatively by Minimum Keyframes
+<kbd>shift</kbd>+<kbd>LEFT</kbd> — Seek Backwards Relatively by Minimum Keyframes<br>
+<kbd>shift</kbd>+<kbd>RIGHT</kbd> — Seek Forwards Relatively by Minimum Keyframes
 
 - On second press with the SAME start/end position invokes write out of a clip.
 
