@@ -7,7 +7,7 @@ Utilizes `ffprobe` to fetch accurate keyframes.<br>
 ### Differences from the other similar scripts
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
 - Without encoding, precise video trimming becomes quite tricky and there is a limit what can be done due to keyframes issues.
-    - Tested several softwares on macOS and As far as I know there is no software that can do it accurately.
+    - Tested several softwares on macOS and as far as I know there is no software that can do it accurately.
     - This script is here to achieve accuracy as much as possible.
 
 
