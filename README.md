@@ -34,3 +34,4 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 - [ ] Keybinding to quit trim-mode
 - [ ] More accurate keyframe fetching
 - [ ] ffmpeg and ffprobe paths are hard-coded
+- [ ] make osascript failable (as it's macOS only feature)
