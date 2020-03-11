@@ -1,7 +1,5 @@
-# trim.lua
-mpv script to create a "precise" clip of video files without transcoding.<br>
-Utilizes **ffprobe** to fetch accurate keyframes.<br>
-Make sure you have **ffmpeg** with **ffprobe** installed.
+# ✂️ trim.lua
+> mpv script to create a "precise" clip of video files without transcoding.
 
 ### Differences from the other similar scripts
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
@@ -13,6 +11,11 @@ Make sure you have **ffmpeg** with **ffprobe** installed.
 ```
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
+
+### Dependencies
+
+- `ffmpeg`
+- `ffprobe`
 
 ### Usage
 <kbd>h</kbd> — Save Trim Start Position (Enters trim-mode on the first press)<br>
