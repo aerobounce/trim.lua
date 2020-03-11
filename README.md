@@ -34,7 +34,7 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 
 ### Todo
 - [ ] More descriptive usage section
-- [ ] Keybinding to quit trim-mode
+- [ ] Keybinding to quit trim-mode? → Just quitting mpv might be enough
 - [ ] More accurate keyframe fetching
 - [ ] ffmpeg and ffprobe paths are hard-coded
 - [ ] make osascript failable (as it's macOS only feature)
