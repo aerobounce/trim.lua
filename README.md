@@ -1,24 +1,24 @@
 # ✂️ trim.lua
 > mpv script to create a "precise" clip of video files without transcoding.
 
-### Differences from the other similar scripts
+### ❓ Differences from the other similar scripts
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
 - Without encoding, precise video trimming becomes quite tricky and there is a limit what can be done due to keyframe issues.
     - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect.
     - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
 
-### Install
+### 📦 Install
 ```
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
-### Dependencies
+### ⚠️ Dependencies
 
 - `ffmpeg`
 - `ffprobe`
 - `osascript` (to post notification on completion. Only on macOS.)
 
-### Usage
+### ✂️ Usage
 
 > #### Enable Trim Mode (on the First Press)
 > > To write out a clip, **press either of the keys twice, with the same start / end position**.<br>
@@ -39,7 +39,7 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 - <kbd>shift</kbd> + <kbd>RIGHT</kbd> → `Seek Forwards Relatively by Minimum Keyframes`
 
 
-### Concat with `ffmpeg`
+### 🗜 Concat with `ffmpeg`
 After splitting, you can concat them with a script something like this.
 
 ```sh
