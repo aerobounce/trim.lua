@@ -7,39 +7,39 @@
     - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect.
     - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
 
-### 📦 Install
+## 📦 Install
 ```
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
-### ⚠️ Dependencies
+## ⚠️ Dependencies
 
 - `ffmpeg`
 - `ffprobe`
 - `osascript` (to post notification on completion. Only on macOS.)
 
-### ✂️ Usage
+## ✂️ Usage
 
 > #### Enable Trim Mode (on the First Press)
-> > To write out a clip, **press either of the keys twice, with the same start / end position**.<br>
-> > To quit Trim Mode, close `mpv` instance.
+> - To write out a clip, **press either of the keys twice, with the same start / end position**.<br>
+> - To quit Trim Mode, close `mpv` instance.
 
 - <kbd>h</kbd> → `Save Trim Start Position`<br>
 - <kbd>k</kbd> → `Save Trim End Position`<br>
 
 
-> #### Seeking
+> ### Seeking
 
 - <kbd>shift</kbd> + <kbd>h</kbd> → `Seek to Trim Start Position`<br>
 - <kbd>shift</kbd> + <kbd>k</kbd> → `Seek to Trim End Position`<br>
 
-> #### Adjust Current Keyframe
+> ### Adjust Current Keyframe
 
 - <kbd>shift</kbd> + <kbd>LEFT</kbd> → `Seek Backwards Relatively by Minimum Keyframes`<br>
 - <kbd>shift</kbd> + <kbd>RIGHT</kbd> → `Seek Forwards Relatively by Minimum Keyframes`
 
 
-### 🗜 Concat with `ffmpeg`
+## 🗜 Concat with `ffmpeg`
 After splitting, you can concat them with a script something like this.
 
 ```sh
@@ -64,10 +64,10 @@ ffmpeg \
     "$DESTINATION"
 ```
 
-### Known Issues
+## Known Issues
 - Any embedded media other than video / audio will be lost, such as embedded subtitles.
 
-### Todo
+## Todo
 - [ ] Make `osascript` optional (as it's macOS only feature)
 - [ ] More accurate keyframe fetching
 - [ ] `ffmpeg` and `ffprobe` paths are hard-coded to `/usr/local/bin/`...
