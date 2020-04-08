@@ -16,25 +16,58 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 
 - `ffmpeg`
 - `ffprobe`
+- `osascript` (to post notification on completion. Only on macOS.)
 
 ### Usage
-<kbd>h</kbd> — Save Trim Start Position (Enters trim-mode on the first press)<br>
-<kbd>k</kbd> — Save Trim End Position (Enters trim-mode on the first press)<br>
-<br>
-<kbd>shift</kbd>+<kbd>h</kbd> — Seek to Trim Start Position<br>
-<kbd>shift</kbd>+<kbd>k</kbd> — Seek to Trim End Position<br>
-<br>
-<kbd>shift</kbd>+<kbd>LEFT</kbd> — Seek Backwards Relatively by Minimum Keyframes<br>
-<kbd>shift</kbd>+<kbd>RIGHT</kbd> — Seek Forwards Relatively by Minimum Keyframes
 
-- On second press with the SAME start/end position invokes write out of a clip.
+> #### Enable Trim Mode (on the First Press)
+> > To write out a clip, **press either of the keys twice, with the same start / end position**.<br>
+> > To quit Trim Mode, close `mpv` instance.
+
+- <kbd>h</kbd> → `Save Trim Start Position`<br>
+- <kbd>k</kbd> → `Save Trim End Position`<br>
+
+
+> #### Seeking
+
+- <kbd>shift</kbd> + <kbd>h</kbd> → `Seek to Trim Start Position`<br>
+- <kbd>shift</kbd> + <kbd>k</kbd> → `Seek to Trim End Position`<br>
+
+> #### Adjust Current Keyframe
+
+- <kbd>shift</kbd> + <kbd>LEFT</kbd> → `Seek Backwards Relatively by Minimum Keyframes`<br>
+- <kbd>shift</kbd> + <kbd>RIGHT</kbd> → `Seek Forwards Relatively by Minimum Keyframes`
+
+
+### Concat with `ffmpeg`
+After splitting, you can concat them with a script something like this.
+
+```sh
+CLIPS=("example_1.mp4" "example_2.mp4")
+DESTINATION="concat_example.mp4"
+
+ffmpeg \
+    -hide_banner \
+    -loglevel verbose \
+    -f concat \
+    -safe 0 \
+    -auto_convert 0 \
+    -err_detect ignore_err \
+    -i <(
+        while read -r; do
+            echo "file '$REPLY'"
+        done <<< "${CLIPS[*]}"
+    ) \
+    -copy_unknown \
+    -map_chapters 0 \
+    -c copy \
+    "$DESTINATION"
+```
 
 ### Known Issues
-- Any embedded media other than video/audio will likely be lost, such as embedded subtitles.
+- Any embedded media other than video / audio will be lost, such as embedded subtitles.
 
 ### Todo
-- [ ] More descriptive usage section
-- [ ] Keybinding to quit trim-mode? → Just quitting mpv might be enough
+- [ ] Make `osascript` optional (as it's macOS only feature)
 - [ ] More accurate keyframe fetching
-- [ ] ffmpeg and ffprobe paths are hard-coded
-- [ ] make osascript failable (as it's macOS only feature)
+- [ ] `ffmpeg` and `ffprobe` paths are hard-coded to `/usr/local/bin/`...
