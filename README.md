@@ -7,6 +7,8 @@
     - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect.
     - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
 
+> In short, `trim.lua` turns mpv into a simple lossless video editor.
+
 ## 📦 Install
 ```
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
