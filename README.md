@@ -22,23 +22,58 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
 
 ## ✂️ Usage
 
-> #### Enable Trim Mode (on the First Press)
-> - To write out a clip, **press either of the keys twice, with the same start / end position**.<br>
-> - To quit Trim Mode, close `mpv` instance.
+<table>
+    <tr>
+        <th colspan="2">
+            <b>Save Trim Positions (Enables Trim Mode on the first press)</b>
+            <blockquote>
+                <p>To write out a clip, press either of the keys twice, with the same start / end position.<br>
+                   To quit Trim Mode, close mpv instance.
+               </p>
+           </blockquote>
+        </th>
+    </tr>
+    <tr>
+        <td><kbd>h</kbd></td>
+        <td>Save trim start position</td>
+    </tr>
+    <tr>
+        <td><kbd>k</kbd></td>
+        <td>Save trim end position</td>
+    </tr>
+</table>
 
-- <kbd>h</kbd> → `Save Trim Start Position`<br>
-- <kbd>k</kbd> → `Save Trim End Position`<br>
+<table>
+    <tr>
+        <th colspan="2">
+            <b>Seeking</b>
+        </th>
+    </tr>
+    <tr>
+        <td><kbd>shift</kbd> + <kbd>h</kbd></td>
+        <td>Seek to trim start position</td>
+    </tr>
+    <tr>
+        <td><kbd>shift</kbd> + <kbd>k</kbd></td>
+        <td>Seek to trim end position</td>
+    </tr>
+</table>
 
-
-> ### Seeking
-
-- <kbd>shift</kbd> + <kbd>h</kbd> → `Seek to Trim Start Position`<br>
-- <kbd>shift</kbd> + <kbd>k</kbd> → `Seek to Trim End Position`<br>
-
-> ### Adjust Current Keyframe
-
-- <kbd>shift</kbd> + <kbd>LEFT</kbd> → `Seek Backwards Relatively by Minimum Keyframes`<br>
-- <kbd>shift</kbd> + <kbd>RIGHT</kbd> → `Seek Forwards Relatively by Minimum Keyframes`
+<table>
+    <tr>
+        <th colspan="2">
+            <b>Adjust Current Keyframe</b>
+        </th>
+    </tr>
+    <tr>
+        <td><kbd>shift</kbd> + <kbd>LEFT</kbd></td>
+        <td>Seek backwards relatively by minimum keyframes</td>
+    </tr>
+    <tr>
+        <td><kbd>shift</kbd> + <kbd>RIGHT</kbd></td>
+        <td>Seek forwards relatively by minimum keyframes</td>
+    </tr>
+</table>
 
 
 ## 🗜 Concat with `ffmpeg`
