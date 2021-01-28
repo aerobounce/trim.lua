@@ -1,15 +1,18 @@
 # ✂️ trim.lua
 > mpv script to create a "precise" clip of video files without transcoding.
 
-### ❓ Differences from the other similar scripts
+## ❓ Differences from the other similar scripts
+
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
 - Without encoding, precise video trimming becomes quite tricky and there is a limit what can be done due to keyframe issues.
+    - More specifically, without transcoding, points you can specify to trim a video file is not free to choose, but limited to keyframes a file have. Otherwise, generated file will be corrupted.
     - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect.
     - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
 
 > In short, `trim.lua` turns mpv into a simple lossless video editor.
 
 ## 📦 Install
+
 ```
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
