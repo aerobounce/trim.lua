@@ -1,6 +1,7 @@
 # ✂️ trim.lua
 > mpv script to create a "precise" clip of video files without transcoding.
 
+
 ## ❓ Differences from the other similar scripts
 
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
@@ -11,17 +12,27 @@
 
 > In short, `trim.lua` turns mpv into a simple lossless video editor.
 
+
 ## 📦 Install
 
-```
+```sh
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
-## ⚠️ Dependencies
+- `ffmpeg` and `ffprobe` paths are hard-coded to `/usr/local/bin/`, rewrite them accordingly if needed.
+
+```lua
+local ffmpeg_bin = "/usr/local/bin/ffmpeg"
+local ffprobe_bin = "/usr/local/bin/ffprobe"
+```
+
+
+## ⚠️ Requirements
 
 - `ffmpeg`
 - `ffprobe`
-- `osascript` (to post notification on completion. Only on macOS.)
+- `osascript` (Only on macOS to post notification on completion)
+
 
 ## ✂️ Usage
 
@@ -44,9 +55,6 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
         <td><kbd>k</kbd></td>
         <td>Save trim end position</td>
     </tr>
-</table>
-
-<table>
     <tr>
         <th colspan="2">
             <b>Seeking</b>
@@ -60,13 +68,18 @@ curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/
         <td><kbd>shift</kbd> + <kbd>k</kbd></td>
         <td>Seek to trim end position</td>
     </tr>
-</table>
-
-<table>
     <tr>
         <th colspan="2">
             <b>Adjust Current Keyframe</b>
         </th>
+    </tr>
+    <tr>
+        <td><kbd>LEFT</kbd></td>
+        <td>Seek backwards relatively 1 second</td>
+    </tr>
+    <tr>
+        <td><kbd>RIGHT</kbd></td>
+        <td>Seek forwards relatively 1 second</td>
     </tr>
     <tr>
         <td><kbd>shift</kbd> + <kbd>LEFT</kbd></td>
@@ -104,10 +117,10 @@ ffmpeg \
     "$DESTINATION"
 ```
 
-## Known Issues
-- Any embedded media other than video / audio will be lost, such as embedded subtitles.
+
+## Known Issue
+- Any embedded media other than video / audio will be lost, such as embedded subtitles. This will unlikely be fixed.
+
 
 ## Todo
-- [ ] Make `osascript` optional (as it's macOS only feature)
-- [ ] More accurate keyframe fetching
-- [ ] `ffmpeg` and `ffprobe` paths are hard-coded to `/usr/local/bin/`...
+- [ ] More accurate keyframe fetching when seeking backwards

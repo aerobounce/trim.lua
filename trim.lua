@@ -3,19 +3,22 @@
 --
 --  AGPLv3 License
 --  Created by github.com/aerobounce on 2019/11/18.
---  Copyright © 2019 aerobounce. All rights reserved.
+--  Copyright © 2019-present aerobounce. All rights reserved.
 --
 
-utils = require "mp.utils"
-msg = require "mp.msg"
-assdraw = require "mp.assdraw"
+local utils = require "mp.utils"
+local msg = require "mp.msg"
+local assdraw = require "mp.assdraw"
 
-initialized = false
-startPositionDisplay = 0.0
-startPosition = 0.0
-endPosition = 0.0
+local ffmpeg_bin = "/usr/local/bin/ffmpeg"
+local ffprobe_bin = "/usr/local/bin/ffprobe"
 
-function initializeIfNeeded()
+local initialized = false
+local startPositionDisplay = 0.0
+local startPosition = 0.0
+local endPosition = 0.0
+
+local function initializeIfNeeded()
     if initialized then
         return
     end
@@ -29,6 +32,7 @@ function initializeIfNeeded()
     mp.commandv("script-message", "osc-visibility", "always")
 
     mp.set_property("pause","yes")
+    mp.set_property("cache","yes")
     mp.set_property("hr-seek-framedrop","no")
     mp.set_property("options/keep-open","always")
 
@@ -36,6 +40,16 @@ function initializeIfNeeded()
         msg.log("info", "Playback Reached End of File")
         mp.set_property("pause","yes")
         mp.commandv("seek", 100, "absolute-percent", "exact")
+    end)
+
+    mp.add_key_binding("LEFT", "seek", function()
+        mp.commandv("seek", -1, "relative", "keyframes")
+        mp.command("show-progress")
+    end)
+
+    mp.add_key_binding("RIGHT", "seek", function()
+        mp.commandv("seek", 1, "relative", "keyframes")
+        mp.command("show-progress")
     end)
 
     mp.add_key_binding("shift+h", "seekToStartPosition", function()
@@ -48,7 +62,7 @@ function initializeIfNeeded()
     initialized = true
 end
 
-function generatePositionText()
+local function generatePositionText()
 
     function formatSeconds(seconds)
         local ret = string.format(
@@ -70,7 +84,7 @@ function generatePositionText()
            .. " secs"
 end
 
-function showPositions()
+local function showPositions()
     local message = generatePositionText()
     msg.log("info", message)
     ass = assdraw.ass_new()
@@ -97,7 +111,7 @@ function saveStartPosition()
         local sourcePath = mp.get_property_native("path")
         local args = {
             "sh", "-c",
-            "/usr/local/bin/ffprobe "
+            ffprobe_bin .. " "
             .. "-loglevel error "
             .. "-read_intervals " .. newPosition .. "%+60 "
             .. "-skip_frame nokey "
@@ -113,13 +127,14 @@ function saveStartPosition()
         local adjustedKeyframe = tonumber(res["stdout"])
                                  or newPosition
 
+        -- Debug use --
         -- for _, val in pairs(args) do msg.log("info", val) end
 
         -- msg.log("info", "res[\"stdout\"]: " .. res["stdout"])
         -- msg.log("info", "res[\"stderr\"]: " .. (res["stderr"]
         --                                         or "stderr is nil"))
-        msg.log("info", "newPosition: " .. newPosition)
-        msg.log("info", "adjustedKeyframe: " .. adjustedKeyframe)
+        -- msg.log("info", "newPosition: " .. newPosition)
+        -- msg.log("info", "adjustedKeyframe: " .. adjustedKeyframe)
 
         newPosition = adjustedKeyframe
     else
@@ -163,7 +178,7 @@ function saveEndPosition()
     end
 end
 
-function generateDestinationPath()
+local function generateDestinationPath()
     local path = mp.get_property("path") or ""
     local filename = mp.get_property("filename/no-ext") or "encode"
     local extension = tostring(string.match(path, "%.([^.]+)$"))
@@ -222,7 +237,7 @@ function writeOut()
     mp.osd_message(message, 10)
 
     local args = {
-        "/usr/local/bin/ffmpeg",
+        ffmpeg_bin,
         "-loglevel", "verbose",
         "-hide_banner",
 
@@ -264,16 +279,17 @@ function writeOut()
         mp.osd_message(message, 10)
 
     else
-        msg.log("info", "Success ✅: '" .. destinationPath .. "'")
-        message = message .. "Done ✅"
+        msg.log("info", "Success ✔︎: '" .. destinationPath .. "'")
+        message = message .. "Done ✔︎"
         msg.log("info", message)
         mp.osd_message(message, 10)
 
+        -- Debug use --
         -- for _, val in pairs(args) do msg.log("info", val) end
 
         utils.subprocess({ args = {
-            "sh", "-c",
-[[osascript <<EOL
+                        "sh", "-c",
+[[osascript << EOL 2> /dev/null
 display notification "Success ✅" with title "mpv: trim" sound name "Glass"
 EOL]]
                         },
