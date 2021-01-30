@@ -5,9 +5,9 @@
 ## ❓ Differences from the other similar scripts
 
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
-- Without encoding, precise video trimming becomes quite tricky and there is a limit what can be done due to keyframe issues.
-    - More specifically, without transcoding, points you can specify to trim a video file is not free to choose, but limited to keyframes a file have. Otherwise, generated file will be corrupted.
-    - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect.
+- Without encoding, video trimming becomes tricky.
+    - Without transcoding, points you can specify to trim is limited to keyframes.
+    - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect nor lightweight.
     - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
 
 > In short, `trim.lua` turns mpv into a simple lossless video editor.
@@ -36,60 +36,25 @@ local ffprobe_bin = "/usr/local/bin/ffprobe"
 
 ## ✂️ Usage
 
-<table>
-    <tr>
-        <th colspan="2">
-            <b>Save Trim Positions (Enables Trim Mode on the first press)</b>
-            <blockquote>
-                <p>To write out a clip, press either of the keys twice, with the same start / end position.<br>
-                   To quit Trim Mode, close mpv instance.
-               </p>
-           </blockquote>
-        </th>
-    </tr>
-    <tr>
-        <td><kbd>h</kbd></td>
-        <td>Save trim start position</td>
-    </tr>
-    <tr>
-        <td><kbd>k</kbd></td>
-        <td>Save trim end position</td>
-    </tr>
-    <tr>
-        <th colspan="2">
-            <b>Seeking</b>
-        </th>
-    </tr>
-    <tr>
-        <td><kbd>shift</kbd> + <kbd>h</kbd></td>
-        <td>Seek to trim start position</td>
-    </tr>
-    <tr>
-        <td><kbd>shift</kbd> + <kbd>k</kbd></td>
-        <td>Seek to trim end position</td>
-    </tr>
-    <tr>
-        <th colspan="2">
-            <b>Adjust Current Keyframe</b>
-        </th>
-    </tr>
-    <tr>
-        <td><kbd>LEFT</kbd></td>
-        <td>Seek backwards relatively 1 second</td>
-    </tr>
-    <tr>
-        <td><kbd>RIGHT</kbd></td>
-        <td>Seek forwards relatively 1 second</td>
-    </tr>
-    <tr>
-        <td><kbd>shift</kbd> + <kbd>LEFT</kbd></td>
-        <td>Seek backwards relatively by minimum keyframes</td>
-    </tr>
-    <tr>
-        <td><kbd>shift</kbd> + <kbd>RIGHT</kbd></td>
-        <td>Seek forwards relatively by minimum keyframes</td>
-    </tr>
-</table>
+#### Enable trim.lua
+
+- <kbd>h</kbd> or <kbd>k</kbd>
+
+
+#### Save Trim Positions
+
+> To write out a clip, press either of the keys twice with the same start / end position.<br>
+> To quit Trim Mode, close mpv instance.
+
+- <kbd>h</kbd> `Save Trim Start Position`
+- <kbd>k</kbd> `Save Trim End Position`
+
+#### Seeking
+
+- <kbd>shift</kbd> + <kbd>LEFT</kbd> `Seek to the Previous Keyframe`
+- <kbd>shift</kbd> + <kbd>RIGHT</kbd> `Seek to the Next Keyframe`
+- <kbd>shift</kbd> + <kbd>h</kbd> `Seek to Saved Trim Start Position`
+- <kbd>shift</kbd> + <kbd>k</kbd> `Seek to Saved Trim End Position`
 
 
 ## 🗜 Concat with `ffmpeg`
@@ -120,7 +85,3 @@ ffmpeg \
 
 ## Known Issue
 - Any embedded media other than video / audio will be lost, such as embedded subtitles. This will unlikely be fixed.
-
-
-## Todo
-- [ ] More accurate keyframe fetching when seeking backwards

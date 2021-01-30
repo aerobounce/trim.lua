@@ -14,9 +14,11 @@ local ffmpeg_bin = "/usr/local/bin/ffmpeg"
 local ffprobe_bin = "/usr/local/bin/ffprobe"
 
 local initialized = false
+local initializedMessageShown = false
 local startPositionDisplay = 0.0
 local startPosition = 0.0
 local endPosition = 0.0
+
 
 local function initializeIfNeeded()
     if initialized then
@@ -29,41 +31,46 @@ local function initializeIfNeeded()
         endPosition = 0.0
     end
 
+    -- Settings suitable for trimming
     mp.commandv("script-message", "osc-visibility", "always")
-
     mp.set_property("pause","yes")
-    mp.set_property("cache","yes")
     mp.set_property("hr-seek-framedrop","no")
     mp.set_property("options/keep-open","always")
-
     mp.register_event("eof-reached", function()
         msg.log("info", "Playback Reached End of File")
         mp.set_property("pause","yes")
         mp.commandv("seek", 100, "absolute-percent", "exact")
     end)
 
-    mp.add_key_binding("LEFT", "seek", function()
-        mp.commandv("seek", -1, "relative", "keyframes")
+    -- Precise keyframe seek
+    mp.add_key_binding("shift+LEFT", "seek-backward", function()
+        mp.commandv("seek", -0.1, "keyframes")
+        mp.command("show-progress")
+    end)
+    mp.add_key_binding("shift+RIGHT", "seek-forward", function()
+        mp.commandv("seek", 0.1, "keyframes")
         mp.command("show-progress")
     end)
 
-    mp.add_key_binding("RIGHT", "seek", function()
-        mp.commandv("seek", 1, "relative", "keyframes")
-        mp.command("show-progress")
+    -- Seek to trimming position
+    mp.add_key_binding("shift+h", "seek-to-start-position", function()
+        mp.commandv("seek", startPositionDisplay, "absolute", "keyframes")
     end)
-
-    mp.add_key_binding("shift+h", "seekToStartPosition", function()
-        mp.commandv("seek", startPositionDisplay, "absolute", "exact")
-    end)
-    mp.add_key_binding("shift+k", "seekToEndPosition", function()
-        mp.commandv("seek", endPosition, "absolute", "exact")
+    mp.add_key_binding("shift+k", "seek-to-end-position", function()
+        mp.commandv("seek", endPosition, "absolute", "keyframes")
     end)
 
     initialized = true
+
+
+    mp.osd_message("", 2)
+    showMessage("trim.lua Enabled!")
+    mp.add_timeout(2, function()
+        initializedMessageShown = true
+    end)
 end
 
 local function generatePositionText()
-
     function formatSeconds(seconds)
         local ret = string.format(
               "%02d:%02d.%03d",
@@ -77,15 +84,14 @@ local function generatePositionText()
         return ret
     end
 
-    return "trim: "
+    return "Trimming: "
            .. tostring(formatSeconds(startPositionDisplay, true))
            .. " secs ~ "
            .. tostring(formatSeconds(endPosition, true))
            .. " secs"
 end
 
-local function showPositions()
-    local message = generatePositionText()
+function showMessage(message)
     msg.log("info", message)
     ass = assdraw.ass_new()
     ass:pos(10, 34)
@@ -93,11 +99,43 @@ local function showPositions()
     mp.set_osd_ass(0, 0, ass.text)
 end
 
+local function showPositions()
+    showMessage(generatePositionText())
+end
+
+function seekToClosestBackwardKeyframe()
+    local currentTimePosition = mp.get_property_number("time-pos")
+    local sourcePath = mp.get_property_native("path")
+    local args = {
+        "sh", "-c",
+        ffprobe_bin .. " "
+        .. "-loglevel error "
+        .. "-read_intervals " .. currentTimePosition .. "%-60 "
+        .. "-skip_frame nokey "
+        .. "-select_streams v:0 "
+        .. "-show_entries frame=pkt_pts_time "
+        .. "-of csv=print_section=0 "
+        .. "-i \"" .. sourcePath
+        .. "\" | awk '$1 > " .. currentTimePosition .. " { print $1 }' "
+        .. "| awk 'NR==1' | tr -d '\\n'"
+    }
+    local res = utils.subprocess({ args = args, cancellable = false })
+    local result = tonumber(res["stdout"]) or currentTimePosition
+
+    msg.log("info", "result: ", result)
+
+    mp.commandv("seek", result, "absolute")
+end
+
 function saveStartPosition()
     initializeIfNeeded()
 
+    if not initializedMessageShown then
+        return
+    end
+
+
     local newPosition = mp.get_property_number("time-pos")
-    -- newPosition = mp.get_property_native("playback-time")
 
     if newPosition == nil or newPosition == "none" then
         newPosition = 0.0
@@ -105,21 +143,22 @@ function saveStartPosition()
 
     startPositionDisplay = newPosition
 
-    -- msg.log("info", "saveStartPosition: " ..newPosition)
-
     if newPosition > 1.0 then
+        -- THIS MAY BE NEEDLESS LOGIC since mpv is doing the same using ffmpeg.
+        -- Subtracting 0.01 to get the next closest keyframe from ffprobe.
+        local newPosition_minus_0_01 = newPosition - 0.01
         local sourcePath = mp.get_property_native("path")
         local args = {
             "sh", "-c",
             ffprobe_bin .. " "
             .. "-loglevel error "
-            .. "-read_intervals " .. newPosition .. "%+60 "
+            .. "-read_intervals " .. newPosition_minus_0_01 .. "%+60 "
             .. "-skip_frame nokey "
             .. "-select_streams v:0 "
             .. "-show_entries frame=pkt_pts_time "
             .. "-of csv=print_section=0 "
             .. "-i \"" .. sourcePath
-            .. "\" | awk '$1 > " .. newPosition .. " { print $1 }' "
+            .. "\" | awk '$1 > " .. newPosition_minus_0_01 .. " { print $1 }' "
             .. "| awk 'NR==1' | tr -d '\\n'"
         }
         local res = utils.subprocess({ args = args,
@@ -127,16 +166,30 @@ function saveStartPosition()
         local adjustedKeyframe = tonumber(res["stdout"])
                                  or newPosition
 
-        -- Debug use --
+        -- For debug use --
         -- for _, val in pairs(args) do msg.log("info", val) end
-
         -- msg.log("info", "res[\"stdout\"]: " .. res["stdout"])
-        -- msg.log("info", "res[\"stderr\"]: " .. (res["stderr"]
-        --                                         or "stderr is nil"))
-        -- msg.log("info", "newPosition: " .. newPosition)
-        -- msg.log("info", "adjustedKeyframe: " .. adjustedKeyframe)
+        -- msg.log("info", "res[\"stderr\"]: " .. (res["stderr"] or "stderr is nil"))
 
         newPosition = adjustedKeyframe
+
+        -- THIS MAY BE NEEDLESS LOGIC.
+
+        -- Seek to the keyframe from ffprobe
+        local old_time_pos = mp.get_property_number("time-pos")
+        mp.commandv("seek", newPosition, "absolute")
+        local new_time_pos = mp.get_property_number("time-pos")
+
+        -- If mpv's keyframe was different from what ffprobe indicated,
+        if old_time_pos ~= new_time_pos then
+            -- Modify the value not to writeOut
+            newPosition =  newPosition - 0.001
+        end
+
+        -- For debug use --
+        -- msg.log("info", "time-pos: ", mp.get_property_number("time-pos"))
+        -- msg.log("info", "newPosition: ", newPosition)
+
     else
         newPosition = 0.0
         startPositionDisplay = newPosition
@@ -151,7 +204,9 @@ function saveStartPosition()
             endPosition = startPosition
         end
 
-        showPositions()
+        if initializedMessageShown then
+            showPositions()
+        end
     end
 end
 
@@ -174,7 +229,9 @@ function saveEndPosition()
             startPosition = endPosition
         end
 
-        showPositions()
+        if initializedMessageShown then
+            showPositions()
+        end
     end
 end
 
@@ -297,16 +354,5 @@ EOL]]
     end
 end
 
-mp.add_key_binding("h", "saveStartPosition", saveStartPosition)
-mp.add_key_binding("k", "saveEndPosition", saveEndPosition)
-
-mp.add_key_binding("Shift+LEFT", "seek", function()
-    initializeIfNeeded()
-    mp.commandv("seek", -0.01, "relative", "keyframes")
-    mp.command("show-progress")
-end)
-mp.add_key_binding("Shift+RIGHT", "seek", function()
-    initializeIfNeeded()
-    mp.commandv("seek", 0.01, "relative", "keyframes")
-    mp.command("show-progress")
-end)
+mp.add_key_binding("h", "save-start-position", saveStartPosition)
+mp.add_key_binding("k", "save-end-position", saveEndPosition)
