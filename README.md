@@ -19,11 +19,12 @@
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
-- `ffmpeg` and `ffprobe` paths are hard-coded to `/usr/local/bin/`, rewrite them accordingly if needed.
+- If your shell has `PATH` to `ffmpeg` and `ffprobe` you're ready to use.
+    - If not, rewrite them accordingly.
 
 ```lua
-local ffmpeg_bin = "/usr/local/bin/ffmpeg"
-local ffprobe_bin = "/usr/local/bin/ffprobe"
+local ffmpeg_bin = "ffmpeg"
+local ffprobe_bin = "ffprobe"
 ```
 
 
@@ -46,15 +47,21 @@ local ffprobe_bin = "/usr/local/bin/ffprobe"
 > To write out a clip, press either of the keys twice with the same start / end position.<br>
 > To quit Trim Mode, close mpv instance.
 
-- <kbd>h</kbd> `Save Trim Start Position`
+- <kbd>h</kbd> `Save Trim Start Keyframe`
 - <kbd>k</kbd> `Save Trim End Position`
 
 #### Seeking
 
 - <kbd>shift</kbd> + <kbd>LEFT</kbd> `Seek to the Previous Keyframe`
 - <kbd>shift</kbd> + <kbd>RIGHT</kbd> `Seek to the Next Keyframe`
-- <kbd>shift</kbd> + <kbd>h</kbd> `Seek to Saved Trim Start Position`
-- <kbd>shift</kbd> + <kbd>k</kbd> `Seek to Saved Trim End Position`
+- <kbd>shift</kbd> + <kbd>h</kbd> `Seek to the Saved Trim Start Keyframe`
+- <kbd>shift</kbd> + <kbd>k</kbd> `Seek to the Saved Trim End Position`
+
+
+#### ℹ️ To create a valid file
+
+- Beggining of the trim position __must be a keyframe__.
+- End position can be any point.
 
 
 ## 🗜 Concat with `ffmpeg`

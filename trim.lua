@@ -5,13 +5,12 @@
 --  Created by github.com/aerobounce on 2019/11/18.
 --  Copyright © 2019-present aerobounce. All rights reserved.
 --
-
 local utils = require "mp.utils"
 local msg = require "mp.msg"
 local assdraw = require "mp.assdraw"
 
-local ffmpeg_bin = "/usr/local/bin/ffmpeg"
-local ffprobe_bin = "/usr/local/bin/ffprobe"
+local ffmpeg_bin = "ffmpeg"
+local ffprobe_bin = "ffprobe"
 
 local initialized = false
 local initializedMessageShown = false
@@ -19,11 +18,11 @@ local startPositionDisplay = 0.0
 local startPosition = 0.0
 local endPosition = 0.0
 
-
 local function initializeIfNeeded()
     if initialized then
         return
     end
+    initialized = true
 
     endPosition = mp.get_property_native("length")
 
@@ -33,62 +32,57 @@ local function initializeIfNeeded()
 
     -- Settings suitable for trimming
     mp.commandv("script-message", "osc-visibility", "always")
-    mp.set_property("pause","yes")
-    mp.set_property("hr-seek-framedrop","no")
-    mp.set_property("options/keep-open","always")
+    mp.set_property("pause", "yes")
+    mp.set_property("hr-seek", "no")
+    mp.set_property("hr-seek-framedrop", "no")
+    mp.set_property("options/keep-open", "always")
     mp.register_event("eof-reached", function()
         msg.log("info", "Playback Reached End of File")
-        mp.set_property("pause","yes")
+        mp.set_property("pause", "yes")
         mp.commandv("seek", 100, "absolute-percent", "exact")
     end)
 
     -- Precise keyframe seek
-    mp.add_key_binding("shift+LEFT", "seek-backward", function()
+    mp.add_key_binding("shift+LEFT", "seek-backward-precise", function()
         mp.commandv("seek", -0.1, "keyframes")
         mp.command("show-progress")
     end)
-    mp.add_key_binding("shift+RIGHT", "seek-forward", function()
+    mp.add_key_binding("shift+RIGHT", "seek-forward-precise", function()
         mp.commandv("seek", 0.1, "keyframes")
         mp.command("show-progress")
     end)
 
     -- Seek to trimming position
     mp.add_key_binding("shift+h", "seek-to-start-position", function()
-        mp.commandv("seek", startPositionDisplay, "absolute", "keyframes")
+        mp.commandv("seek", startPosition, "absolute")
     end)
     mp.add_key_binding("shift+k", "seek-to-end-position", function()
-        mp.commandv("seek", endPosition, "absolute", "keyframes")
+        mp.commandv("seek", endPosition, "absolute")
     end)
 
-    initialized = true
-
-
-    mp.osd_message("", 2)
+    -- Show OSD
     showMessage("trim.lua Enabled!")
-    mp.add_timeout(2, function()
+    mp.add_timeout(1, function()
         initializedMessageShown = true
+        mp.set_osd_ass(0, 0, "")
     end)
 end
 
 local function generatePositionText()
     function formatSeconds(seconds)
-        local ret = string.format(
-              "%02d:%02d.%03d",
-              math.floor(seconds / 60) % 60,
-              math.floor(seconds) % 60,
-              seconds * 1000 % 1000
-        )
+        local ret = string.format("%02d:%02d.%03d",
+                                  math.floor(seconds / 60) % 60,
+                                  math.floor(seconds) % 60,
+                                  seconds * 1000 % 1000)
         if seconds > 3600 then
             ret = string.format("%d:%s", math.floor(seconds / 3600), ret)
         end
         return ret
     end
 
-    return "Trimming: "
-           .. tostring(formatSeconds(startPositionDisplay, true))
-           .. " secs ~ "
-           .. tostring(formatSeconds(endPosition, true))
-           .. " secs"
+    return
+        "Trimming: " .. tostring(formatSeconds(startPositionDisplay, true)) ..
+            " secs ~ " .. tostring(formatSeconds(endPosition, true)) .. " secs"
 end
 
 function showMessage(message)
@@ -103,29 +97,26 @@ local function showPositions()
     showMessage(generatePositionText())
 end
 
-function seekToClosestBackwardKeyframe()
-    local currentTimePosition = mp.get_property_number("time-pos")
-    local sourcePath = mp.get_property_native("path")
-    local args = {
-        "sh", "-c",
-        ffprobe_bin .. " "
-        .. "-loglevel error "
-        .. "-read_intervals " .. currentTimePosition .. "%-60 "
-        .. "-skip_frame nokey "
-        .. "-select_streams v:0 "
-        .. "-show_entries frame=pkt_pts_time "
-        .. "-of csv=print_section=0 "
-        .. "-i \"" .. sourcePath
-        .. "\" | awk '$1 > " .. currentTimePosition .. " { print $1 }' "
-        .. "| awk 'NR==1' | tr -d '\\n'"
-    }
-    local res = utils.subprocess({ args = args, cancellable = false })
-    local result = tonumber(res["stdout"]) or currentTimePosition
+-- function seekToClosestBackwardKeyframe()
+--     local currentTimePosition = mp.get_property_number("time-pos")
+--     local sourcePath = mp.get_property_native("path")
+--     local args = {
+--         "sh",
+--         "-c",
+--         ffprobe_bin .. " " .. "-loglevel error " .. "-read_intervals " ..
+--             currentTimePosition .. "%-60 " .. "-skip_frame nokey " ..
+--             "-select_streams v:0 " .. "-show_entries frame=pkt_pts_time " ..
+--             "-of csv=print_section=0 " .. "-i \"" .. sourcePath ..
+--             "\" | awk '$1 > " .. currentTimePosition .. " { print $1 }' " ..
+--             "| awk 'NR==1' | tr -d '\\n'",
+--     }
+--     local res = utils.subprocess({args = args, cancellable = false})
+--     local result = tonumber(res["stdout"]) or currentTimePosition
 
-    msg.log("info", "result: ", result)
+--     msg.log("info", "result: ", result)
 
-    mp.commandv("seek", result, "absolute")
-end
+--     mp.commandv("seek", result, "absolute")
+-- end
 
 function saveStartPosition()
     initializeIfNeeded()
@@ -133,7 +124,6 @@ function saveStartPosition()
     if not initializedMessageShown then
         return
     end
-
 
     local newPosition = mp.get_property_number("time-pos")
 
@@ -149,22 +139,17 @@ function saveStartPosition()
         local newPosition_minus_0_01 = newPosition - 0.01
         local sourcePath = mp.get_property_native("path")
         local args = {
-            "sh", "-c",
-            ffprobe_bin .. " "
-            .. "-loglevel error "
-            .. "-read_intervals " .. newPosition_minus_0_01 .. "%+60 "
-            .. "-skip_frame nokey "
-            .. "-select_streams v:0 "
-            .. "-show_entries frame=pkt_pts_time "
-            .. "-of csv=print_section=0 "
-            .. "-i \"" .. sourcePath
-            .. "\" | awk '$1 > " .. newPosition_minus_0_01 .. " { print $1 }' "
-            .. "| awk 'NR==1' | tr -d '\\n'"
+            "sh",
+            "-c",
+            ffprobe_bin .. " " .. "-loglevel error " .. "-read_intervals " ..
+                newPosition_minus_0_01 .. "%+60 " .. "-skip_frame nokey " ..
+                "-select_streams v:0 " .. "-show_entries frame=pkt_pts_time " ..
+                "-of csv=print_section=0 " .. "-i \"" .. sourcePath ..
+                "\" | awk '$1 > " .. newPosition_minus_0_01 .. " { print $1 }' " ..
+                "| awk 'NR==1' | tr -d '\\n'",
         }
-        local res = utils.subprocess({ args = args,
-                                       cancellable = false })
-        local adjustedKeyframe = tonumber(res["stdout"])
-                                 or newPosition
+        local res = utils.subprocess({args = args, cancellable = false})
+        local adjustedKeyframe = tonumber(res["stdout"]) or newPosition
 
         -- For debug use --
         -- for _, val in pairs(args) do msg.log("info", val) end
@@ -183,7 +168,7 @@ function saveStartPosition()
         -- If mpv's keyframe was different from what ffprobe indicated,
         if old_time_pos ~= new_time_pos then
             -- Modify the value not to writeOut
-            newPosition =  newPosition - 0.001
+            newPosition = newPosition - 0.001
         end
 
         -- For debug use --
@@ -274,6 +259,10 @@ function writeOut()
     if startPosition == endPosition then
         message = "trim: Error - Start/End Position are the same."
         mp.osd_message(message, 3)
+
+        if initializedMessageShown then
+            showPositions()
+        end
         return
     end
 
@@ -294,30 +283,23 @@ function writeOut()
     mp.osd_message(message, 10)
 
     local args = {
-        ffmpeg_bin,
-        "-loglevel", "verbose",
-        "-hide_banner",
-
-        "-ss", tostring(startPosition),
-        "-i", tostring(sourcePath),
-        "-t", tostring(trimDuration),
-
-        "-map", "v:0",
-        "-map", "a:0",
-        "-c", "copy",
-
-        "-avoid_negative_ts", "make_zero",
-        "-async", "1",
-        "-strict", "-2",
-        -- "-noaccurate_seek",
-
-        destinationPath
+        "sh",
+        "-c",
+        ffmpeg_bin .. " " .. "-hide_banner " .. "-loglevel " .. "verbose " ..
+            "-ss " .. tostring(startPosition) .. " -i " .. "\"" ..
+            tostring(sourcePath) .. "\"" .. " -t " .. tostring(trimDuration) ..
+            " -map " .. "v:0 " .. "-map " .. "a:0 " .. "-c " .. "copy " ..
+            "-avoid_negative_ts " .. "make_zero " .. "-async " .. "1 " ..
+            "-strict " .. "-2 " .. "\"" .. destinationPath .. "\"",
     }
+    -- "-noaccurate_seek",
 
-    for _, val in pairs(args) do msg.log("info", val) end
+    msg.log("info", "Executing ffmpeg command:")
+    for _, val in pairs(args) do
+        msg.log("info", val)
+    end
 
-    local res = utils.subprocess({ args = args,
-                                   cancellable = false })
+    local res = utils.subprocess({args = args, cancellable = false})
 
     if (res["status"] ~= 0) then
         if (res["status"] ~= nil) then
@@ -344,13 +326,16 @@ function writeOut()
         -- Debug use --
         -- for _, val in pairs(args) do msg.log("info", val) end
 
-        utils.subprocess({ args = {
-                        "sh", "-c",
-[[osascript << EOL 2> /dev/null
+        utils.subprocess({
+            args = {
+                "sh",
+                "-c",
+                [[osascript << EOL 2> /dev/null
 display notification "Success ✅" with title "mpv: trim" sound name "Glass"
-EOL]]
-                        },
-                        cancellable = false })
+EOL]],
+            },
+            cancellable = false,
+        })
     end
 end
 
