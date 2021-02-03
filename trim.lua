@@ -9,12 +9,16 @@ local utils = require "mp.utils"
 local msg = require "mp.msg"
 local assdraw = require "mp.assdraw"
 
-local ffmpeg_bin = "ffmpeg"
-local ffprobe_bin = "ffprobe"
+-- ffmpeg path
+if package.config:sub(1, 1) == "/" then
+    -- macOS, *nix
+    ffmpeg_bin = "ffmpeg"
+else
+    -- Windows
+    ffmpeg_bin = "ffmpeg.exe"
+end
 
 local initialized = false
-local initializedMessageShown = false
-local startPositionDisplay = 0.0
 local startPosition = 0.0
 local endPosition = 0.0
 
@@ -24,17 +28,14 @@ local function initializeIfNeeded()
     end
     initialized = true
 
-    endPosition = mp.get_property_native("length")
-
-    if endPosition == "none" then
-        endPosition = 0.0
-    end
+    --
+    -- mpv Settings
+    --
 
     -- Settings suitable for trimming
     mp.commandv("script-message", "osc-visibility", "always")
     mp.set_property("pause", "yes")
     mp.set_property("hr-seek", "no")
-    mp.set_property("hr-seek-framedrop", "no")
     mp.set_property("options/keep-open", "always")
     mp.register_event("eof-reached", function()
         msg.log("info", "Playback Reached End of File")
@@ -42,182 +43,92 @@ local function initializeIfNeeded()
         mp.commandv("seek", 100, "absolute-percent", "exact")
     end)
 
-    -- Precise keyframe seek
-    mp.add_key_binding("shift+LEFT", "seek-backward-precise", function()
-        mp.commandv("seek", -0.1, "keyframes")
-        mp.command("show-progress")
-    end)
-    mp.add_key_binding("shift+RIGHT", "seek-forward-precise", function()
-        mp.commandv("seek", 0.1, "keyframes")
-        mp.command("show-progress")
-    end)
+    --
+    -- Key Bindings
+    --
 
-    -- Seek to trimming position
-    mp.add_key_binding("shift+h", "seek-to-start-position", function()
+    -- Seeking by Keyframe
+    local function seekByKeyframe(amount)
+        mp.commandv("seek", amount, "keyframes", "exact")
+        mp.command("show-progress")
+        updateTrimmingPositionsOSDASS()
+    end
+    mp.add_forced_key_binding("LEFT", "backward-by-keyframe", function()
+        seekByKeyframe(-0.1)
+    end, {repeatable = true})
+    mp.add_forced_key_binding("RIGHT", "forward-by-keyframe", function()
+        seekByKeyframe(0.1)
+    end, {repeatable = true})
+    mp.add_forced_key_binding("UP", "forward-by-keyframe-larger", function()
+        seekByKeyframe(10)
+    end, {repeatable = true})
+    mp.add_forced_key_binding("DOWN", "backward-by-keyframe-larger", function()
+        seekByKeyframe(-10)
+    end, {repeatable = true})
+
+    -- Precise Seeking by Seconds
+    local function seekBySeconds(amount)
+        mp.commandv("seek", amount, "relative", "exact")
+        mp.command("show-progress")
+        updateTrimmingPositionsOSDASS()
+    end
+    mp.add_forced_key_binding("shift+LEFT", "backward-by-seconds", function()
+        seekBySeconds(-0.1)
+    end, {repeatable = true})
+    mp.add_forced_key_binding("shift+RIGHT", "forward-by-seconds", function()
+        seekBySeconds(0.1)
+    end, {repeatable = true})
+    mp.add_forced_key_binding("alt+LEFT", "backward-by-seconds-larger", function()
+        seekBySeconds(-0.5)
+    end, {repeatable = true})
+    mp.add_forced_key_binding("alt+RIGHT", "forward-by-seconds-larger", function()
+        seekBySeconds(0.5)
+    end, {repeatable = true})
+
+    -- Seek to Trimming Positions
+    mp.add_forced_key_binding("shift+h", "seek-to-start-position", function()
         mp.commandv("seek", startPosition, "absolute")
+        mp.command("show-progress")
+        updateTrimmingPositionsOSDASS()
     end)
-    mp.add_key_binding("shift+k", "seek-to-end-position", function()
+    mp.add_forced_key_binding("shift+k", "seek-to-end-position", function()
         mp.commandv("seek", endPosition, "absolute")
+        mp.command("show-progress")
+        updateTrimmingPositionsOSDASS()
     end)
 
     -- Show OSD
-    showMessage("trim.lua Enabled!")
-    mp.add_timeout(1, function()
-        initializedMessageShown = true
-        mp.set_osd_ass(0, 0, "")
+    showOsdAss("Enabled trim.lua")
+    -- Seek to Default Trim Positions
+    seekByKeyframe(-0.1)
+    seekByKeyframe(0.1)
+    -- Set Default Trim Positions
+    mp.add_timeout(0.5, function()
+        startPosition = mp.get_property_number("time-pos")
+        if startPosition == "none" then startPosition = 0.0 end
+        endPosition = mp.get_property_native("duration")
+        if endPosition == "none" then endPosition = 0.0 end
+        updateTrimmingPositionsOSDASS()
     end)
 end
 
-local function generatePositionText()
-    function formatSeconds(seconds)
-        local ret = string.format("%02d:%02d.%03d",
-                                  math.floor(seconds / 60) % 60,
-                                  math.floor(seconds) % 60,
-                                  seconds * 1000 % 1000)
+local function getTrimmingPositionsText()
+    local function formatSeconds(seconds)
+        local formatted = string.format("%02d:%02d.%03d",
+                                        math.floor(seconds / 60) % 60,
+                                        math.floor(seconds) % 60,
+                                        seconds * 1000 % 1000)
         if seconds > 3600 then
-            ret = string.format("%d:%s", math.floor(seconds / 3600), ret)
+            formatted = string.format("%d:%s",
+                                      math.floor(seconds / 3600),
+                                      formatted)
         end
-        return ret
+        return formatted
     end
 
-    return
-        "Trimming: " .. tostring(formatSeconds(startPositionDisplay, true)) ..
-            " secs ~ " .. tostring(formatSeconds(endPosition, true)) .. " secs"
-end
-
-function showMessage(message)
-    msg.log("info", message)
-    ass = assdraw.ass_new()
-    ass:pos(10, 34)
-    ass:append(message)
-    mp.set_osd_ass(0, 0, ass.text)
-end
-
-local function showPositions()
-    showMessage(generatePositionText())
-end
-
--- function seekToClosestBackwardKeyframe()
---     local currentTimePosition = mp.get_property_number("time-pos")
---     local sourcePath = mp.get_property_native("path")
---     local args = {
---         "sh",
---         "-c",
---         ffprobe_bin .. " " .. "-loglevel error " .. "-read_intervals " ..
---             currentTimePosition .. "%-60 " .. "-skip_frame nokey " ..
---             "-select_streams v:0 " .. "-show_entries frame=pkt_pts_time " ..
---             "-of csv=print_section=0 " .. "-i \"" .. sourcePath ..
---             "\" | awk '$1 > " .. currentTimePosition .. " { print $1 }' " ..
---             "| awk 'NR==1' | tr -d '\\n'",
---     }
---     local res = utils.subprocess({args = args, cancellable = false})
---     local result = tonumber(res["stdout"]) or currentTimePosition
-
---     msg.log("info", "result: ", result)
-
---     mp.commandv("seek", result, "absolute")
--- end
-
-function saveStartPosition()
-    initializeIfNeeded()
-
-    if not initializedMessageShown then
-        return
-    end
-
-    local newPosition = mp.get_property_number("time-pos")
-
-    if newPosition == nil or newPosition == "none" then
-        newPosition = 0.0
-    end
-
-    startPositionDisplay = newPosition
-
-    if newPosition > 1.0 then
-        -- THIS MAY BE NEEDLESS LOGIC since mpv is doing the same using ffmpeg.
-        -- Subtracting 0.01 to get the next closest keyframe from ffprobe.
-        local newPosition_minus_0_01 = newPosition - 0.01
-        local sourcePath = mp.get_property_native("path")
-        local args = {
-            "sh",
-            "-c",
-            ffprobe_bin .. " " .. "-loglevel error " .. "-read_intervals " ..
-                newPosition_minus_0_01 .. "%+60 " .. "-skip_frame nokey " ..
-                "-select_streams v:0 " .. "-show_entries frame=pkt_pts_time " ..
-                "-of csv=print_section=0 " .. "-i \"" .. sourcePath ..
-                "\" | awk '$1 > " .. newPosition_minus_0_01 .. " { print $1 }' " ..
-                "| awk 'NR==1' | tr -d '\\n'",
-        }
-        local res = utils.subprocess({args = args, cancellable = false})
-        local adjustedKeyframe = tonumber(res["stdout"]) or newPosition
-
-        -- For debug use --
-        -- for _, val in pairs(args) do msg.log("info", val) end
-        -- msg.log("info", "res[\"stdout\"]: " .. res["stdout"])
-        -- msg.log("info", "res[\"stderr\"]: " .. (res["stderr"] or "stderr is nil"))
-
-        newPosition = adjustedKeyframe
-
-        -- THIS MAY BE NEEDLESS LOGIC.
-
-        -- Seek to the keyframe from ffprobe
-        local old_time_pos = mp.get_property_number("time-pos")
-        mp.commandv("seek", newPosition, "absolute")
-        local new_time_pos = mp.get_property_number("time-pos")
-
-        -- If mpv's keyframe was different from what ffprobe indicated,
-        if old_time_pos ~= new_time_pos then
-            -- Modify the value not to writeOut
-            newPosition = newPosition - 0.001
-        end
-
-        -- For debug use --
-        -- msg.log("info", "time-pos: ", mp.get_property_number("time-pos"))
-        -- msg.log("info", "newPosition: ", newPosition)
-
-    else
-        newPosition = 0.0
-        startPositionDisplay = newPosition
-    end
-
-    if startPosition == newPosition then
-        writeOut()
-    else
-        startPosition = newPosition
-
-        if startPosition > endPosition then
-            endPosition = startPosition
-        end
-
-        if initializedMessageShown then
-            showPositions()
-        end
-    end
-end
-
-function saveEndPosition()
-    initializeIfNeeded()
-
-    newPosition = mp.get_property_number("time-pos")
-    -- newPosition = mp.get_property_native("playback-time")
-
-    if newPosition == nil or newPosition == "none" then
-        newPosition = 0.0
-    end
-
-    if endPosition == newPosition then
-        writeOut()
-    else
-        endPosition = newPosition
-
-        if endPosition < startPosition then
-            startPosition = endPosition
-        end
-
-        if initializedMessageShown then
-            showPositions()
-        end
-    end
+    return "Trimming: " .. tostring(formatSeconds(startPosition, true)) ..
+               " secs ~ " .. tostring(formatSeconds(endPosition, true)) ..
+               " secs"
 end
 
 local function generateDestinationPath()
@@ -254,90 +165,198 @@ local function generateDestinationPath()
     end
 end
 
-function writeOut()
+function showOsdAss(message)
+    msg.log("info", message)
+    ass = assdraw.ass_new()
+    ass:pos(10, 34)
+    ass:append(message)
+    mp.set_osd_ass(0, 0, ass.text)
+end
 
-    if startPosition == endPosition then
-        message = "trim: Error - Start/End Position are the same."
-        mp.osd_message(message, 3)
+function updateTrimmingPositionsOSDASS()
+    mp.osd_message("", 1)
+    showOsdAss(getTrimmingPositionsText())
+end
 
-        if initializedMessageShown then
-            showPositions()
-        end
+function setStartPosition()
+    initializeIfNeeded()
+
+    -- Make sure current time-pos is a keyframe
+    mp.commandv("seek", -0.01, "keyframes", "exact")
+    mp.commandv("seek", 0.01, "keyframes", "exact")
+
+    local newPosition = mp.get_property_number("time-pos")
+
+    if startPosition == newPosition then
+        writeOut()
         return
     end
 
+    startPosition = newPosition
+    updateTrimmingPositionsOSDASS()
+end
+
+function setEndPosition()
+    initializeIfNeeded()
+
+    local newPosition = mp.get_property_number("time-pos")
+
+    if endPosition == newPosition then
+        writeOut()
+        return
+    end
+
+    endPosition = newPosition
+    updateTrimmingPositionsOSDASS()
+end
+
+function writeOut()
+    --
+    -- Error Handlings
+    --
+    if startPosition == nil or startPosition == "none" or endPosition == nil or
+        endPosition == "none" then
+        message = "trim: Error - Start or End Position is unassigned."
+        mp.osd_message(message, 3)
+    end
+
+    if startPosition == endPosition then
+        message = "trim: Error - Start & End Position cannot be the same."
+        mp.osd_message(message, 3)
+        return
+    end
+
+    if startPosition > endPosition then
+        message = "trim: Error - Start Position is exceeding the End Position."
+        mp.osd_message(message, 3)
+        return
+    end
+
+    if endPosition < startPosition then
+        message = "trim: Error - End Position cannot be smaller then the Start Position."
+        mp.osd_message(message, 3)
+        return
+    end
+
+    -- Generate Destination Path
     local destinationPath = generateDestinationPath()
+
     if (destinationPath == "") then
         message = "trim: Failed to generate destination path."
         mp.osd_message(message, 3)
         return
     end
 
-    mp.set_osd_ass(0, 0, "")
-
+    -- Prepare values
     local trimDuration = endPosition - startPosition
     local sourcePath = mp.get_property_native("path")
 
-    local message = generatePositionText() .. "\nWriting out... "
-    msg.log("info", message)
+    local message = getTrimmingPositionsText() .. "\nWriting out... "
+    mp.set_osd_ass(0, 0, "")
     mp.osd_message(message, 10)
 
-    local args = {
-        "sh",
-        "-c",
-        ffmpeg_bin .. " " .. "-hide_banner " .. "-loglevel " .. "verbose " ..
-            "-ss " .. tostring(startPosition) .. " -i " .. "\"" ..
-            tostring(sourcePath) .. "\"" .. " -t " .. tostring(trimDuration) ..
-            " -map " .. "v:0 " .. "-map " .. "a:0 " .. "-c " .. "copy " ..
-            "-avoid_negative_ts " .. "make_zero " .. "-async " .. "1 " ..
-            "-strict " .. "-2 " .. "\"" .. destinationPath .. "\"",
-    }
-    -- "-noaccurate_seek",
+    --
+    -- Refs:
+    -- https://ffmpeg.org/ffmpeg.html
+    -- https://ffmpeg.org/ffmpeg-formats.html
+    -- https://trac.ffmpeg.org/wiki/Seeking
+    --
 
+    --
+    -- -async samples_per_second
+    --
+    -- -async 1 is a special case where only the start of
+    -- the audio stream is corrected without any later correction.
+    --
+
+    --
+    -- avoid_negative_ts integer (output)
+    --
+    -- ‘make_zero’
+    -- Shift timestamps so that the first timestamp is 0.
+    --
+    -- NOTE: This option becomes crucial when joining excerpts
+    -- and playing with certain players.
+    -- Without this option, output will be corrupted
+    -- when viewed with a plain video player such as QuickTime.
+    -- However, the problem is, with this option, when trimming,
+    -- keyframe will be shifted to one later or one before.
+    -- This seems to be trade-off. Maybe.
+    --
+    -- If you don't care how output will be shown with software like QuickTime
+    -- nor going to join splits, you can actually trim at any position.
+    -- Aim of this script is to avoid that very problem, though.
+    --
+
+    --
+    -- ffmpeg command structure
+    -- ffmpeg ... -ss VALUE -i VALUE -t VALUE ...
+    -- ... -map v:0 -map a:0 -c copy
+    -- ... -async 1 -avoid_negative_ts make_zero
+
+    -- Compose command
+    local args = {
+        ffmpeg_bin,
+
+        "-hide_banner",
+        "-loglevel", "verbose",
+
+        "-ss", tostring(startPosition),
+        "-i", tostring(sourcePath),
+        "-t", tostring(trimDuration),
+
+        "-map", "v:0",
+        "-map", "a:0",
+        "-c", "copy",
+
+        "-avoid_negative_ts", "make_zero",
+        "-async", "1",
+
+        destinationPath
+    }
+
+    -- Print command to console
     msg.log("info", "Executing ffmpeg command:")
     for _, val in pairs(args) do
         msg.log("info", val)
     end
 
-    local res = utils.subprocess({args = args, cancellable = false})
+    -- Execute command
+    mp.command_native_async({
+        name = "subprocess",
+        args = args,
+        capture_stdout = true
+    }, function(res, val, err)
 
-    if (res["status"] ~= 0) then
-        if (res["status"] ~= nil) then
-            message = message .. "\nERROR: " .. res["status"]
-        end
+        if val.status == 1 then
+            message = message .. "Failed. Refer console for details."
+            msg.log("error", message)
+            mp.osd_message(message, 10)
 
-        if (res["error"] ~= nil) then
-            message = message .. "\nERROR: " .. res["error"]
-        end
+        else
+            msg.log("info", "Success!: '" .. destinationPath .. "'")
+            message = message .. "Done!"
+            msg.log("info", message)
+            mp.osd_message(message, 2)
 
-        if (res["stdout"] ~= nil) then
-            message = message .. "\nstdout: " .. res["stdout"]
-        end
-
-        msg.log("error", message)
-        mp.osd_message(message, 10)
-
-    else
-        msg.log("info", "Success ✔︎: '" .. destinationPath .. "'")
-        message = message .. "Done ✔︎"
-        msg.log("info", message)
-        mp.osd_message(message, 10)
-
-        -- Debug use --
-        -- for _, val in pairs(args) do msg.log("info", val) end
-
-        utils.subprocess({
-            args = {
-                "sh",
-                "-c",
-                [[osascript << EOL 2> /dev/null
+            -- Post notification on macOS
+            mp.command_native_async({
+                name = "subprocess",
+                args = {
+                    "sh", "-c",
+[[osascript << EOL 2> /dev/null
 display notification "Success ✅" with title "mpv: trim" sound name "Glass"
-EOL]],
-            },
-            cancellable = false,
-        })
-    end
+EOL]]
+                },
+                capture_stdout = false
+            }, function(res, val, err)
+            end)
+        end
+    end)
 end
 
-mp.add_key_binding("h", "save-start-position", saveStartPosition)
-mp.add_key_binding("k", "save-end-position", saveEndPosition)
+--
+-- Key Bindings
+--
+mp.add_key_binding("h", "trim-set-start-position", setStartPosition)
+mp.add_key_binding("k", "trim-set-end-position", setEndPosition)
