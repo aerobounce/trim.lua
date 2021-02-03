@@ -306,7 +306,7 @@ function writeOut()
         "-t", tostring(trimDuration),
 
         "-map", "v:0",
-        "-map", "a:0",
+        "-map", "a:0?",
         "-c", "copy",
 
         "-avoid_negative_ts", "make_zero",
