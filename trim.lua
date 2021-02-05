@@ -18,6 +18,8 @@ else
     ffmpeg_bin = "ffmpeg.exe"
 end
 
+local isVideoFile = false
+local stripMetadata = false
 local initialized = false
 local startPosition = 0.0
 local endPosition = 0.0
@@ -32,10 +34,15 @@ local function initializeIfNeeded()
     -- mpv Settings
     --
 
+    -- TODO: There may be a better property to know if file has a video stream
+    isVideoFile = (mp.get_property("video-params") or "") ~= ""
+
     -- Settings suitable for trimming
     mp.commandv("script-message", "osc-visibility", "always")
     mp.set_property("pause", "yes")
-    mp.set_property("hr-seek", "no")
+    if isVideoFile then
+        mp.set_property("hr-seek", "no")
+    end
     mp.set_property("options/keep-open", "always")
     mp.register_event("eof-reached", function()
         msg.log("info", "Playback Reached End of File")
@@ -47,43 +54,63 @@ local function initializeIfNeeded()
     -- Key Bindings
     --
 
-    -- Seeking by Keyframe
-    local function seekByKeyframe(amount)
-        mp.commandv("seek", amount, "keyframes", "exact")
-        mp.command("show-progress")
-        updateTrimmingPositionsOSDASS()
-    end
-    mp.add_forced_key_binding("LEFT", "backward-by-keyframe", function()
-        seekByKeyframe(-0.1)
-    end, {repeatable = true})
-    mp.add_forced_key_binding("RIGHT", "forward-by-keyframe", function()
-        seekByKeyframe(0.1)
-    end, {repeatable = true})
-    mp.add_forced_key_binding("UP", "forward-by-keyframe-larger", function()
-        seekByKeyframe(10)
-    end, {repeatable = true})
-    mp.add_forced_key_binding("DOWN", "backward-by-keyframe-larger", function()
-        seekByKeyframe(-10)
-    end, {repeatable = true})
+    -- Toggle stripMetadata
+    mp.add_forced_key_binding("t", "toggle-strip-metadata", function()
+        stripMetadata = not stripMetadata
+        local message = ""
+        if stripMetadata then
+            message ="trim: Strip Metadata Enabled"
+        else
+            message ="trim: Strip Metadata Disabled"
+        end
+        mp.osd_message(message, 3)
+    end)
 
-    -- Precise Seeking by Seconds
-    local function seekBySeconds(amount)
-        mp.commandv("seek", amount, "relative", "exact")
-        mp.command("show-progress")
-        updateTrimmingPositionsOSDASS()
+    if isVideoFile then
+        -- Seeking by Keyframe
+        local function seekByKeyframe(amount)
+            mp.commandv("seek", amount, "keyframes", "exact")
+            mp.command("show-progress")
+            updateTrimmingPositionsOSDASS()
+        end
+        mp.add_forced_key_binding("LEFT", "backward-by-keyframe", function()
+            seekByKeyframe(-0.1)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("RIGHT", "forward-by-keyframe", function()
+            seekByKeyframe(0.1)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("UP", "forward-by-keyframe-larger", function()
+            seekByKeyframe(10)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("DOWN", "backward-by-keyframe-larger", function()
+            seekByKeyframe(-10)
+        end, {repeatable = true})
+
+        -- Precise Seeking by Seconds
+        local function seekBySeconds(amount)
+            mp.commandv("seek", amount, "relative", "exact")
+            mp.command("show-progress")
+            updateTrimmingPositionsOSDASS()
+        end
+        mp.add_forced_key_binding("shift+LEFT", "backward-by-seconds", function()
+            seekBySeconds(-0.1)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("shift+RIGHT", "forward-by-seconds", function()
+            seekBySeconds(0.1)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("alt+LEFT", "backward-by-seconds-larger", function()
+            seekBySeconds(-0.5)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("alt+RIGHT", "forward-by-seconds-larger", function()
+            seekBySeconds(0.5)
+        end, {repeatable = true})
+
+        -- Seek to Default Trim Positions
+        if isVideoFile then
+            seekByKeyframe(-0.1)
+            seekByKeyframe(0.1)
+        end
     end
-    mp.add_forced_key_binding("shift+LEFT", "backward-by-seconds", function()
-        seekBySeconds(-0.1)
-    end, {repeatable = true})
-    mp.add_forced_key_binding("shift+RIGHT", "forward-by-seconds", function()
-        seekBySeconds(0.1)
-    end, {repeatable = true})
-    mp.add_forced_key_binding("alt+LEFT", "backward-by-seconds-larger", function()
-        seekBySeconds(-0.5)
-    end, {repeatable = true})
-    mp.add_forced_key_binding("alt+RIGHT", "forward-by-seconds-larger", function()
-        seekBySeconds(0.5)
-    end, {repeatable = true})
 
     -- Seek to Trimming Positions
     mp.add_forced_key_binding("shift+h", "seek-to-start-position", function()
@@ -99,9 +126,7 @@ local function initializeIfNeeded()
 
     -- Show OSD
     showOsdAss("Enabled trim.lua")
-    -- Seek to Default Trim Positions
-    seekByKeyframe(-0.1)
-    seekByKeyframe(0.1)
+
     -- Set Default Trim Positions
     mp.add_timeout(0.5, function()
         startPosition = mp.get_property_number("time-pos")
@@ -181,9 +206,11 @@ end
 function setStartPosition()
     initializeIfNeeded()
 
-    -- Make sure current time-pos is a keyframe
-    mp.commandv("seek", -0.01, "keyframes", "exact")
-    mp.commandv("seek", 0.01, "keyframes", "exact")
+    if isVideoFile then
+        -- Make sure current time-pos is a keyframe
+        mp.commandv("seek", -0.01, "keyframes", "exact")
+        mp.commandv("seek", 0.01, "keyframes", "exact")
+    end
 
     local newPosition = mp.get_property_number("time-pos")
 
@@ -256,10 +283,19 @@ function writeOut()
     mp.osd_message(message, 10)
 
     --
+    -- ffmpeg options
     -- Refs:
     -- https://ffmpeg.org/ffmpeg.html
     -- https://ffmpeg.org/ffmpeg-formats.html
     -- https://trac.ffmpeg.org/wiki/Seeking
+    -- https://trac.ffmpeg.org/wiki/Map#Optionalmapping
+    --
+
+    --
+    -- -map 0:v? -map 0:a?
+    --
+    -- Adding a trailing question mark (?) to -map will
+    -- ignore the mapping if the stream does not exist.
     --
 
     --
@@ -275,26 +311,40 @@ function writeOut()
     -- ‘make_zero’
     -- Shift timestamps so that the first timestamp is 0.
     --
-    -- NOTE: This option becomes crucial when joining excerpts
+    -- NOTES:
+    -- This parameter becomes crucial when joining excerpts
     -- and playing with certain players.
+    --
     -- Without this option, output will be corrupted
     -- when viewed with a plain video player such as QuickTime.
+    --
     -- However, the problem is, with this option, when trimming,
-    -- keyframe will be shifted to one later or one before.
+    -- keyframe may get shifted to one later or one before depending on a file.
     -- This seems to be trade-off. Maybe.
     --
-    -- If you don't care how output will be shown with software like QuickTime
-    -- nor going to join splits, you can actually trim at any position.
-    -- Aim of this script is to avoid that very problem, though.
+    -- If how output will be shown with software like QuickTime is not a matter,
+    -- nor going to join splits, you can actually trim at any positions.
+    -- Aim of this script is to Avoid That Very Problem, though.
     --
 
     --
     -- ffmpeg command structure
     -- ffmpeg ... -ss VALUE -i VALUE -t VALUE ...
-    -- ... -map v:0 -map a:0 -c copy
+    -- ... -map v:0? -map a:0? -c copy
     -- ... -async 1 -avoid_negative_ts make_zero
+    --
 
     -- Compose command
+    local strip_metadata = ""
+    if stripMetadata then
+        strip_metadata = " -err_detect" .. " ignore_err" ..
+                         " -ignore_chapters" .. " 1" ..
+                         " -map_metadata" .. " -1" ..
+                         " -fflags" .. " +bitexact" ..
+                         " -flags:v" .. " +bitexact" ..
+                         " -flags:a" .. " +bitexact "
+                         -- " -movflags" .. " faststart "
+    end
     local args = {
         ffmpeg_bin,
 
@@ -305,9 +355,11 @@ function writeOut()
         "-i", tostring(sourcePath),
         "-t", tostring(trimDuration),
 
-        "-map", "v:0",
+        "-map", "v:0?",
         "-map", "a:0?",
         "-c", "copy",
+
+        strip_metadata ..
 
         "-avoid_negative_ts", "make_zero",
         "-async", "1",
@@ -356,7 +408,7 @@ EOL]]
 end
 
 --
--- Key Bindings
+-- Static Key Bindings
 --
 mp.add_key_binding("h", "trim-set-start-position", setStartPosition)
 mp.add_key_binding("k", "trim-set-end-position", setEndPosition)
