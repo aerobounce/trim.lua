@@ -34,8 +34,9 @@ local function initializeIfNeeded()
     -- mpv Settings
     --
 
-    -- TODO: There may be a better property to know if file has a video stream
-    isVideoFile = (mp.get_property("video-params") or "") ~= ""
+    -- "track-list" is consistent against video on/off cycle.
+    local videoTrack = mp.get_property_native("track-list")[1] or {}
+    isVideoFile = videoTrack["type"] == "video" and videoTrack["albumart"] == "false"
 
     -- Settings suitable for trimming
     mp.commandv("script-message", "osc-visibility", "always")
