@@ -1,5 +1,6 @@
 --
 --  trim.lua
+--  version 2021.03.01
 --
 --  AGPLv3 License
 --  Created by github.com/aerobounce on 2019/11/18.
@@ -111,6 +112,25 @@ local function initializeIfNeeded()
             seekByKeyframe(-0.1)
             seekByKeyframe(0.1)
         end
+    else
+        -- Seeking by Seconds
+        local function seekBySeconds(amount)
+            mp.commandv("seek", amount, "relative")
+            mp.command("show-progress")
+            updateTrimmingPositionsOSDASS()
+        end
+        mp.add_forced_key_binding("LEFT", "backward-by-seconds", function()
+            seekBySeconds(-1)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("RIGHT", "forward-by-seconds", function()
+            seekBySeconds(1)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("DOWN", "backward-by-seconds-larger", function()
+            seekBySeconds(-5)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("UP", "forward-by-seconds-larger", function()
+            seekBySeconds(5)
+        end, {repeatable = true})
     end
 
     -- Seek to Trimming Positions
@@ -130,10 +150,18 @@ local function initializeIfNeeded()
 
     -- Set Default Trim Positions
     mp.add_timeout(0.5, function()
-        startPosition = mp.get_property_number("time-pos")
-        if startPosition == "none" then startPosition = 0.0 end
-        endPosition = mp.get_property_native("duration")
-        if endPosition == "none" then endPosition = 0.0 end
+        -- If initialized by startPosition, trim should be startPosition to EOF.
+        if startPosition ~= 0.0 then
+            startPosition = mp.get_property_number("time-pos")
+            endPosition = mp.get_property_native("duration")
+            if startPosition == "none" then startPosition = 0.0 end
+
+        -- If initialized by endPosition, trim should be 0.0 to endPosition.
+        elseif endPosition ~= 0.0 then
+            startPosition = 0.0
+            if endPosition == "none" then endPosition = 0.0 end
+        end
+
         updateTrimmingPositionsOSDASS()
     end)
 end
@@ -225,8 +253,6 @@ function setStartPosition()
 end
 
 function setEndPosition()
-    initializeIfNeeded()
-
     local newPosition = mp.get_property_number("time-pos")
 
     if endPosition == newPosition then
@@ -235,6 +261,7 @@ function setEndPosition()
     end
 
     endPosition = newPosition
+    initializeIfNeeded()
     updateTrimmingPositionsOSDASS()
 end
 
