@@ -70,22 +70,22 @@ local function initializeIfNeeded()
 
     if isVideoFile then
         -- Seeking by Keyframe
-        local function seekByKeyframe(amount)
+        local function seekByKeyframes(amount)
             mp.commandv("seek", amount, "keyframes", "exact")
             mp.command("show-progress")
             updateTrimmingPositionsOSDASS()
         end
-        mp.add_forced_key_binding("LEFT", "backward-by-keyframe", function()
-            seekByKeyframe(-0.1)
+        mp.add_forced_key_binding("LEFT", "-0.1_keyframes", function()
+            seekByKeyframes(-0.1)
         end, {repeatable = true})
-        mp.add_forced_key_binding("RIGHT", "forward-by-keyframe", function()
-            seekByKeyframe(0.1)
+        mp.add_forced_key_binding("RIGHT", "0.1_keyframes", function()
+            seekByKeyframes(0.1)
         end, {repeatable = true})
-        mp.add_forced_key_binding("UP", "forward-by-keyframe-larger", function()
-            seekByKeyframe(10)
+        mp.add_forced_key_binding("UP", "10_keyframes", function()
+            seekByKeyframes(10)
         end, {repeatable = true})
-        mp.add_forced_key_binding("DOWN", "backward-by-keyframe-larger", function()
-            seekByKeyframe(-10)
+        mp.add_forced_key_binding("DOWN", "-10_keyframes", function()
+            seekByKeyframes(-10)
         end, {repeatable = true})
 
         -- Precise Seeking by Seconds
@@ -94,23 +94,23 @@ local function initializeIfNeeded()
             mp.command("show-progress")
             updateTrimmingPositionsOSDASS()
         end
-        mp.add_forced_key_binding("shift+LEFT", "backward-by-seconds", function()
+        mp.add_forced_key_binding("shift+LEFT", "-0.1_seconds", function()
             seekBySeconds(-0.1)
         end, {repeatable = true})
-        mp.add_forced_key_binding("shift+RIGHT", "forward-by-seconds", function()
+        mp.add_forced_key_binding("shift+RIGHT", "0.1_seconds", function()
             seekBySeconds(0.1)
         end, {repeatable = true})
-        mp.add_forced_key_binding("alt+LEFT", "backward-by-seconds-larger", function()
-            seekBySeconds(-0.5)
-        end, {repeatable = true})
-        mp.add_forced_key_binding("alt+RIGHT", "forward-by-seconds-larger", function()
+        mp.add_forced_key_binding("shift+UP", "0.5_seconds", function()
             seekBySeconds(0.5)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("shift+DOWN", "-0.5_seconds", function()
+            seekBySeconds(-0.5)
         end, {repeatable = true})
 
         -- Seek to Default Trim Positions
         if isVideoFile then
-            seekByKeyframe(-0.1)
-            seekByKeyframe(0.1)
+            seekByKeyframes(-0.1)
+            seekByKeyframes(0.1)
         end
     else
         -- Seeking by Seconds
@@ -119,17 +119,30 @@ local function initializeIfNeeded()
             mp.command("show-progress")
             updateTrimmingPositionsOSDASS()
         end
-        mp.add_forced_key_binding("LEFT", "backward-by-seconds", function()
+        mp.add_forced_key_binding("LEFT", "-1_seconds", function()
             seekBySeconds(-1)
         end, {repeatable = true})
-        mp.add_forced_key_binding("RIGHT", "forward-by-seconds", function()
+        mp.add_forced_key_binding("RIGHT", "1_seconds", function()
             seekBySeconds(1)
         end, {repeatable = true})
-        mp.add_forced_key_binding("DOWN", "backward-by-seconds-larger", function()
+        mp.add_forced_key_binding("UP", "5_seconds", function()
+            seekBySeconds(5)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("DOWN", "-5_seconds", function()
             seekBySeconds(-5)
         end, {repeatable = true})
-        mp.add_forced_key_binding("UP", "forward-by-seconds-larger", function()
-            seekBySeconds(5)
+
+        mp.add_forced_key_binding("shift+LEFT", "-10_seconds", function()
+            seekBySeconds(-10)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("shift+RIGHT", "10_seconds", function()
+            seekBySeconds(10)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("shift+UP", "30_seconds", function()
+            seekBySeconds(30)
+        end, {repeatable = true})
+        mp.add_forced_key_binding("shift+DOWN", "-30_seconds", function()
+            seekBySeconds(-30)
         end, {repeatable = true})
     end
 
@@ -236,7 +249,7 @@ function setStartPosition()
     initializeIfNeeded()
 
     if isVideoFile then
-        -- Make sure current time-pos is a keyframe
+        -- Make sure current time-pos is a keyframes
         mp.commandv("seek", -0.01, "keyframes", "exact")
         mp.commandv("seek", 0.01, "keyframes", "exact")
     end
@@ -347,7 +360,7 @@ function writeOut()
     -- when viewed with a plain video player such as QuickTime.
     --
     -- However, the problem is, with this option, when trimming,
-    -- keyframe may get shifted to one later or one before depending on a file.
+    -- keyframes may get shifted to one later or one before depending on a file.
     -- This seems to be trade-off. Maybe.
     --
     -- If how output will be shown with software like QuickTime is not a matter,

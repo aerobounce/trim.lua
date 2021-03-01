@@ -1,5 +1,5 @@
 # ✂️ trim.lua
-> mpv script to create a "precise" clip of video files without transcoding.
+> mpv script to create a "precise" clip of audio / video files without transcoding.
 
 
 ## ❓ Differences from the other similar scripts
@@ -10,36 +10,49 @@
     - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect nor lightweight.
     - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
 
-> In short, `trim.lua` turns mpv into a simple lossless video editor.
+> In short, `trim.lua` turns mpv into a simple lossless audio / video editor.
 
 
 ## 📦 Install
 
 ```sh
+# macOS, *nix
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
-- If your shell has `PATH` to `ffmpeg` and `ffprobe` you're ready to use.
-    - If not, rewrite them accordingly.
+- If your shell has `PATH` to `ffmpeg` you're ready to use.
+    - If not, rewrite `ffmpeg_bin` accordingly.
+- All Windows users likely have to specify full path to `ffmpeg`.
+    - Or copy the standalone binary into the script directory (not tested).
+
+> trim.lua
 
 ```lua
-local ffmpeg_bin = "ffmpeg"
-local ffprobe_bin = "ffprobe"
+-- macOS, *nix
+ffmpeg_bin = "ffmpeg"
+
+-- Windows
+ffmpeg_bin = "ffmpeg.exe"
 ```
 
 
 ## ⚠️ Requirements
 
 - `ffmpeg`
-- `ffprobe`
-- `osascript` (Only on macOS to post notification on completion)
 
 
 ## ✂️ Usage
 
-#### Enable trim.lua
+#### Enable trim mode
 
 - <kbd>h</kbd> or <kbd>k</kbd>
+
+
+#### Toggle strip metadata mode (After initializing trim mode)
+
+> Stripping metadata can fix certain corrupted files
+
+- <kbd>t</kbd>
 
 
 #### Save Trim Positions
@@ -52,13 +65,35 @@ local ffprobe_bin = "ffprobe"
 
 #### Seeking
 
-- <kbd>shift</kbd> + <kbd>LEFT</kbd> `Seek to the Previous Keyframe`
-- <kbd>shift</kbd> + <kbd>RIGHT</kbd> `Seek to the Next Keyframe`
-- <kbd>shift</kbd> + <kbd>h</kbd> `Seek to the Saved Trim Start Keyframe`
-- <kbd>shift</kbd> + <kbd>k</kbd> `Seek to the Saved Trim End Position`
+> Seek to saved positions
+
+- <kbd>shift</kbd> + <kbd>h</kbd> `Seek to the saved Trim start position`
+- <kbd>shift</kbd> + <kbd>k</kbd> `Seek to the saved Trim end position`
+
+> With video file
+
+- <kbd>LEFT</kbd> `Seek backward by keyframe (Minimum distance)`
+- <kbd>RIGHT</kbd> `Seek forward by keyframe (Minimum distance)`
+- <kbd>UP</kbd> `Seek forward by keyframe (Larger distance)`
+- <kbd>DOWN</kbd> `Seek backward by keyframe (Larger distance)`
+- <kbd>shift+LEFT</kbd>  `Seek backward exactly by seconds (-0.1 seconds)`
+- <kbd>shift+RIGHT</kbd>  `Seek forward exactly by seconds (0.1 seconds)`
+- <kbd>shift+UP</kbd>  `Seek backward exactly by seconds (0.5 seconds)`
+- <kbd>shift+DOWN</kbd>  `Seek forward exactly by seconds (-0.5 seconds)`
+
+> With audio file
+
+- <kbd>LEFT</kbd> `Seek backward by seconds (-1 seconds)`
+- <kbd>RIGHT</kbd> `Seek forward by seconds (1 seconds)`
+- <kbd>UP</kbd> `Seek forward by seconds (5 seconds)`
+- <kbd>DOWN</kbd> `Seek backward by seconds (-5 seconds)`
+- <kbd>shift+LEFT</kbd> `Seek backward by seconds (-10 seconds)`
+- <kbd>shift+RIGHT</kbd> `Seek forward by seconds (10 seconds)`
+- <kbd>shift+UP</kbd> `Seek forward by seconds (30 seconds)`
+- <kbd>shift+DOWN</kbd> `Seek backward by seconds (-30 seconds)`
 
 
-#### ℹ️ To create a valid file
+#### ℹ️ To create a valid video file
 
 - Beggining of the trim position __must be a keyframe__.
 - End position can be any point.
