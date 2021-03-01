@@ -47,10 +47,13 @@ ffmpeg_bin = "ffmpeg.exe"
 
 - <kbd>h</kbd> or <kbd>k</kbd>
 
+> If initialized with <kbd>h</kbd>, default trim positions will be: `Current time position` to `End of file`.<br>
+> If initialized with <kbd>k</kbd>, default trim positions will be: `Head of file` to `Current time position`.
+
 
 #### Toggle strip metadata mode (After initializing trim mode)
 
-> Stripping metadata can fix certain corrupted files
+> Stripping metadata can fix certain corrupted files.
 
 - <kbd>t</kbd>
 
