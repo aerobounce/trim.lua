@@ -2,32 +2,36 @@
 > mpv script to create a "precise" clip of audio / video files without transcoding.
 
 
-## ❓ Differences from the other similar scripts
+## Differences from the other similar scripts
 
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
 - Without encoding, video trimming becomes tricky.
-    - Without transcoding, a point you can specify to trim is limited to keyframes.
+    - A point you can specify to trim is limited to keyframes.
     - Tested several softwares on macOS and as far as I know there is no software that can do it accurately. Well, there is, but none were perfect nor lightweight.
-    - This script is here to achieve accuracy as much as possible — **Making a clip from a file within minimum keyframe distance, without transcoding**.
+    - This script is to achieve accuracy as much as possible — Making a clip from a file within minimum keyframe distance, without transcoding.
 
-> In short, `trim.lua` turns mpv into a simple lossless audio / video editor.
+In short, `trim.lua` turns mpv into a simple lossless audio / video editor.
 
 
-## 📦 Install
+## Install
 
 ```sh
 # macOS, *nix
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
+### Requirements
+
+`ffmpeg`
+
 - If your shell has `PATH` to `ffmpeg` you're ready to use.
     - If not, rewrite `ffmpeg_bin` accordingly.
 - All Windows users likely have to specify full path to `ffmpeg`.
     - Or copy the standalone binary into the script directory (not tested).
 
-> trim.lua
-
 ```lua
+-- trim.lua
+
 -- macOS, *nix
 ffmpeg_bin = "ffmpeg"
 
@@ -36,12 +40,7 @@ ffmpeg_bin = "ffmpeg.exe"
 ```
 
 
-## ⚠️ Requirements
-
-- `ffmpeg`
-
-
-## ✂️ Usage
+## Usage
 
 #### Enable trim mode
 
@@ -96,13 +95,13 @@ ffmpeg_bin = "ffmpeg.exe"
 - <kbd>shift+DOWN</kbd> `Seek backward by seconds (-30 seconds)`
 
 
-#### ℹ️ To create a valid video file
+#### To create a valid video file
 
 - Beggining of the trim position __must be a keyframe__.
 - End position can be any point.
 
 
-## 🗜 Concat with `ffmpeg`
+## Concat with `ffmpeg`
 After splitting, you can concat them with a script something like this.
 
 ```sh
