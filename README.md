@@ -1,8 +1,9 @@
 # ✂️ trim.lua
 > mpv script to create a "precise" clip of audio / video files without transcoding.
 
+# Overview
 
-## Differences from the other similar scripts
+**Differences from the other similar scripts**
 
 - **trim.lua** is aimed only for extraction of clips with **no-transcoding**. Encodings will never be occured.
 - Without encoding, video trimming becomes tricky.
@@ -13,10 +14,9 @@
 In short, `trim.lua` turns mpv into a simple lossless audio / video editor.
 
 
-## Install
+# Install
 
 ```sh
-# macOS, *nix
 curl https://raw.githubusercontent.com/aerobounce/trim.lua/master/trim.lua >> ~/.config/mpv/scripts/trim.lua
 ```
 
@@ -40,7 +40,7 @@ ffmpeg_bin = "ffmpeg.exe"
 ```
 
 
-## Usage
+# Usage
 
 #### Enable trim mode
 
@@ -101,7 +101,7 @@ ffmpeg_bin = "ffmpeg.exe"
 - End position can be any point.
 
 
-## Concat with `ffmpeg`
+# Concat with `ffmpeg`
 After splitting, you can concat them with a script something like this.
 
 ```sh
@@ -127,5 +127,5 @@ ffmpeg \
 ```
 
 
-## Known Issue
+# Known Issue
 - Any embedded media other than video / audio will be lost, such as embedded subtitles. This will unlikely be fixed.
