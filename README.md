@@ -80,8 +80,8 @@ ffmpeg_bin = "ffmpeg.exe"
 - <kbd>DOWN</kbd> `Seek backward by keyframe (Larger distance)`
 - <kbd>shift+LEFT</kbd>  `Seek backward exactly by seconds (-0.1 seconds)`
 - <kbd>shift+RIGHT</kbd>  `Seek forward exactly by seconds (0.1 seconds)`
-- <kbd>shift+UP</kbd>  `Seek backward exactly by seconds (0.5 seconds)`
-- <kbd>shift+DOWN</kbd>  `Seek forward exactly by seconds (-0.5 seconds)`
+- <kbd>shift+UP</kbd>  `Seek forward exactly by seconds (0.5 seconds)`
+- <kbd>shift+DOWN</kbd>  `Seek backward exactly by seconds (-0.5 seconds)`
 
 > With audio file
 
